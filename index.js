@@ -38,6 +38,11 @@ app.get("/", (req, res) => {
 	);
 });
 
+// Return the whole list
+app.get("/api/persons", (req, res) => {
+	res.json(persons);
+});
+
 // Load info page
 app.get("/info", (req, res) => {
 	let totalPersons = persons.length;
@@ -60,11 +65,6 @@ app.get("/api/persons/:id", (req, res) => {
 	}
 });
 
-// Return the whole list
-app.get("/api/persons", (req, res) => {
-	res.json(persons);
-});
-
 // Delete a single entry, this works by re-filtering the list and excluding the matching id.
 // Works since persons is an array of objects.
 
@@ -77,43 +77,58 @@ app.delete("/api/persons/:id", (req, res) => {
 app.post("/api/persons/", (req, res) => {
 	const body = req.body;
 
-	// function to generate a new random id number as requested
-	const newId = function () {
-		return Math.ceil(Math.random() * 10000 + persons.length);
+	// function to generate a new random id number as requested modified to
+	// return a sequential id which is much better practice.
+	// const newId = function () {
+	//  return Math.ceil(Math.random() * 10000 + persons.length) // example of rand ID but not needed.
+	// 	return persons.length + 1;
+	// };
+
+	const newId = () => {
+		const maxId =
+			persons.length > 0 ? Math.max(...persons.map((n) => n.id)) : 0;
+		return maxId + 1;
 	};
 
 	// error message if empty,  calling the return stops the function here
-	if (!body.content) {
-		return res.status(400).json({
-			error: "content missing",
-		});
-	}
+	// if (!body.content) {
+	// 	console.log(body.content);
+	// 	return res.status(400).json({
+	// 		error: "content missing",
+	// 	});
+	// }
 
-	if (persons.find((person) => body.name === person.name)) {
-		return res.status(410).json({
-			error: "duplicate name",
+	if (persons.some((person) => body.name === person.name)) {
+		return res.status(406).json({
+			error: "name must be unique",
 		});
 	}
 
 	// throw an error if no name or number, else standardise format of the output and
-	if (!body.name || !body.number) {
-		return res.status(420).json({
-			error: "missing name or number",
+	if (!body.name) {
+		return res.status(400).json({
+			error: "missing name",
 		});
-	} else {
-		const person = {
-			id: newId(),
-			name: body.name,
-			number: body.number,
-		};
-
-		persons.push(person);
-
-		res.json(person);
 	}
+
+	if (!body.number) {
+		return res.status(400).json({
+			error: "missing number",
+		});
+	}
+	// } else {
+	const person = {
+		id: newId(),
+		name: body.name,
+		number: body.number,
+	};
+
+	persons.push(person);
+
+	res.json(person);
 });
+// });
 
 // ********** Server ************
 
-app.listen(PORT);
-console.log(`Server running on port: ${PORT}`);
+app.listen(PORT, () => console.log(`Server running on port: ${PORT}`));
