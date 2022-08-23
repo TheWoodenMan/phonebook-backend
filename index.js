@@ -1,8 +1,14 @@
 const http = require("http");
 const express = require("express");
 const app = express();
-const bodyParser = require("body-parser");
+const morgan = require("morgan");
 app.use(express.json());
+app.use(morgan("tiny"));
+morgan.token("obj", function (req, res) {
+	return `${JSON.stringify(req.body)}`;
+});
+app.use(morgan(":obj"));
+
 const PORT = 3001;
 
 // ********** Content ************
@@ -55,9 +61,7 @@ app.get("/info", (req, res) => {
 // Handle request for a single record, n.b. must be a number to match the type of the key in the db
 app.get("/api/persons/:id", (req, res) => {
 	const id = Number(req.params.id);
-	console.log(id);
 	const person = persons.find((person) => person.id === id);
-	console.log(person);
 	if (person) {
 		res.json(person);
 	} else {
@@ -89,14 +93,6 @@ app.post("/api/persons/", (req, res) => {
 			persons.length > 0 ? Math.max(...persons.map((n) => n.id)) : 0;
 		return maxId + 1;
 	};
-
-	// error message if empty,  calling the return stops the function here
-	// if (!body.content) {
-	// 	console.log(body.content);
-	// 	return res.status(400).json({
-	// 		error: "content missing",
-	// 	});
-	// }
 
 	if (persons.some((person) => body.name === person.name)) {
 		return res.status(406).json({
